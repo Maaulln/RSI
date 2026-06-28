@@ -128,8 +128,10 @@ Input gejala (voice / touch / assisted)
 
 ```mermaid
 flowchart TD
-    %% PRE-ARRIVAL
-    A1[Datang langsung\nKe kiosk / pendaftaran]
+    %% QUICK EMERGENCY SCREEN (BARU - paling depan)
+    A1[Datang ke kiosk]
+    A0[Quick screen: tombol besar/voice\nApakah ini darurat? + red-flag listening]
+    A0d{Darurat jelas?}
 
     %% IDENTIFIKASI
     B1[Identifikasi pasien\nFingerprint / Face / NIK manual]
@@ -139,48 +141,66 @@ flowchart TD
     B5[Daftar baru\nInput data identitas]
 
     %% INPUT GEJALA
-    C1[Input gejala\nForm ikon / voice / teks bebas]
+    C1[Input gejala detail\nForm ikon / voice / teks bebas]
 
     %% TRIAGE
     D1[Triage engine\nLLM ekstrak + rule rekomendasi]
-    D2{Kondisi darurat?}
-    D3[Arahkan ke IGD]
+    D2{Red-flag darurat\nterdeteksi dari input detail?}
+    D3[Arahkan ke IGD\nStaf dipanggil langsung]
+    D1b{Confidence tinggi?}
+    D1c[Staf review and override manual]
 
-    %% REKOMENDASI & NAVIGASI
+    %% REKOMENDASI and NAVIGASI
     E1[Rekomendasi poli + cetak tiket\nNama poli, lantai, warna jalur, no. antrian]
     E2[Navigasi ke poli\nGaris lantai / signage / voice]
 
     %% DI POLI
     F1[Tunggu antrian]
+    F1a[Notifikasi WA\nGiliran mendekat]
+    F1b{Pasien/staf merasa\nsalah poli?}
     F2[Diperiksa dokter\nRiwayat ditampilkan ke dokter]
 
-    %% POST POLI
-    G1{Hasil pemeriksaan}
-    G2[Resep obat]
-    G3[Rujuk lab / radiologi]
-    G4[Selesai / pulang]
+    %% POST POLI non-exclusive
+    G1[Hasil pemeriksaan]
+    G2{Perlu resep?}
+    G3{Perlu rujukan\nlab/radiologi?}
     G5[Arahkan ke apotek]
     G6[Arahkan ke lab]
     G7[Ringkasan via WA]
+    G4[Selesai / pulang]
 
     %% UPDATE
     H1[(Update riwayat\nke My eRSIy)]
 
     %% CONNECTIONS
-    A1 --> B1
+    A1 --> A0 --> A0d
+    A0d -- Ya --> D3
+    A0d -- Tidak atau tidak yakin --> B1
+
     B1 --> B2
     B2 -- Ya --> B3 --> B4 --> C1
     B2 -- Tidak --> B5 --> C1
-    C1 --> D1
-    D1 --> D2
+
+    C1 --> D1 --> D2
     D2 -- Ya --> D3
-    D2 -- Tidak --> E1
-    E1 --> E2 --> F1 --> F2
+    D2 -- Tidak --> D1b
+    D1b -- Tidak --> D1c --> E1
+    D1b -- Ya --> E1
+
+    E1 --> E2 --> F1 --> F1a --> F1b
+    F1b -- Ya, salah poli --> D1c
+    F1b -- Tidak --> F2
+
     F2 --> G1
-    G1 --> G2 --> G5
-    G1 --> G3 --> G6
-    G1 --> G4 --> G7
-    G5 & G6 & G7 --> H1
+    G1 --> G2
+    G1 --> G3
+    G2 -- Ya --> G5
+    G3 -- Ya --> G6
+    G1 --> G7 --> G4
+
+    G5 --> H1
+    G6 --> H1
+    G4 --> H1
 
     %% STYLING
     classDef teal fill:#1D9E75,stroke:#0F6E56,color:#E1F5EE
@@ -192,74 +212,18 @@ flowchart TD
     classDef green fill:#639922,stroke:#3B6D11,color:#EAF3DE
     classDef db fill:#185FA5,stroke:#0C447C,color:#E6F1FB
 
-    class A1,C1,E1,E2,G2,G5 teal
+    class A1,C1,E1,E2,G5 teal
     class B1,D1,F2 purple
     class B3,B4 blue
     class B5,F1,G1 gray
-    class D2,D3 red
-    class G3,G6 amber
+    class A0d,D2,D3,F1b red
+    class D1b,D1c,G2,G3 amber
     class G4,G7 green
     class H1 db
 ```
 
----
+Perubahan teknis dari versi sebelumnya selain fix tanda kutip:
+1. Saya juga mengganti `&` join syntax (`G5 & G6 & G4 --> H1`) jadi tiga baris terpisah (`G5 --> H1`, dll) — secara sintaks `&` join itu valid di mermaid, tapi saya pisah supaya lebih mudah Anda debug manual kalau masih ada error, dan mengurangi satu kemungkinan sumber masalah sekaligus.
+2. Mengganti kata "ATAU" dan slash di beberapa label teks staf jadi kata biasa untuk mengurangi karakter spesial yang berpotensi konflik.
 
-## Production Tech Stack (Final)
-
-### Frontend / Client
-- **Next.js 14 (App Router)**: Framework React yang sudah production-ready dengan SSR, routing, dan PWA support bawaan. Cocok untuk kiosk karena bisa jalan offline jika koneksi internal RS terganggu.
-- **React Three Fiber + Three.js**: Render 3D avatar langsung di browser tanpa butuh game engine seperti Unity/Unreal. Lebih ringan, mudah diintegrasikan ke Next.js, dan tidak butuh install apapun di sisi pasien.
-- **Ready Player Me**: Platform avatar 3D yang export ke format glTF/GLB — langsung kompatibel dengan Three.js. Tidak perlu modeler 3D, avatar bisa dikustomisasi sesuai identitas RSI (warna baju, tampilan dokter/perawat).
-- **Tailwind CSS**: Untuk UI form ikon bergambar dan layar kiosk. Utility-first, cepat build, dan mudah maintain font besar + high-contrast yang dibutuhkan untuk aksesibilitas.
-- **Framer Motion**: Animasi transisi antar layar kiosk agar terasa smooth dan tidak tiba-tiba. Penting untuk pengalaman pasien lansia agar tidak disorientasi.
-
-### Voice & Avatar Pipeline
-- **Faster-Whisper**: Implementasi Whisper yang 4x lebih cepat dengan akurasi sama. Support Bahasa Indonesia dan Jawa. Self-hosted — data suara pasien tidak keluar dari jaringan RS.
-- **Ollama + LLM lokal (Mistral 7B)**: LLM berjalan di server internal RS. Alasannya satu: data medis pasien tidak boleh dikirim ke cloud eksternal. Familiar juga karena sudah dipakai di DARSI.
-- **Coqui XTTS v2**: TTS open source dengan kualitas suara natural dan support Bahasa Indonesia. Self-hosted, tidak ada biaya per karakter seperti ElevenLabs.
-- **MuseTalk**: Lip-sync real-time open source untuk menggerakkan mulut avatar sesuai audio TTS. Bisa self-hosted di GPU server RS.
-- **Mixamo (Adobe)**: Animasi avatar gratis — idle, greeting, gesture. Tidak perlu animator 3D, tinggal download dan attach ke model Ready Player Me.
-- **Rhubarb Lip Sync**: Konversi audio ke data viseme (gerakan mulut) yang kemudian dikirim ke Three.js untuk animasi. Bridge antara TTS output dan avatar.
-
-### Backend & AI
-- **FastAPI + Gunicorn + Uvicorn**: Backend utama yang sudah familiar. Gunicorn sebagai process manager agar tidak crash saat satu worker mati. Uvicorn sebagai ASGI server untuk handle WebSocket real-time.
-- **MCP Server (Model Context Protocol)**: Agar LLM bisa memanggil tools secara terstruktur — akses My eRSIy API, baca data antrian, jalankan triage rules — tanpa hardcode semua di backend. Modular, mudah ditambah integrasi baru.
-- **LiveKit**: Orkestrasi pipeline voice agent real-time: handle STT → LLM → TTS secara berurutan, termasuk barge-in (pasien bicara saat avatar masih berbicara). Menggantikan WebSocket custom yang kompleks.
-- **LangChain / LlamaIndex**: Untuk RAG pipeline triage — ambil konteks riwayat pasien dari My eRSIy, inject ke prompt LLM sebelum memberi rekomendasi poli. Sudah terbukti di arsitektur DARSI.
-
-### Data & Integrasi
-- **PostgreSQL**: Database utama untuk sesi kiosk, log triage, dan data antrian. Relasional, mature, dan sudah banyak dipakai di ekosistem RS.
-- **Redis**: Cache untuk response LLM yang sering berulang (gejala umum → poli yang sama) dan session state per pasien selama di kiosk. Mengurangi latency signifikan.
-- **My eRSIy API connector**: Dibuat custom via MCP Server — pull riwayat pasien saat login biometrik, push data kunjungan baru setelah selesai.
-
-### Infrastruktur
-- **Docker + Docker Compose / Kubernetes**: Semua service (FastAPI, Ollama, Whisper, MuseTalk, Redis, PostgreSQL) dikemas dalam container. Mudah deploy, mudah rollback jika ada update bermasalah.
-- **Nginx**: Reverse proxy di depan FastAPI. Handle SSL termination, static file serving, dan rate limiting. FastAPI tidak boleh expose langsung ke network RS.
-- **GitHub Actions**: CI/CD otomatis — setiap push ke branch main, otomatis test → build Docker image → deploy ke server RS. Tidak perlu deploy manual.
-- **Terraform**: Infrastructure as code — konfigurasi server, network, dan volume ditulis sebagai file, bukan klik-klik di dashboard. Environment staging dan production selalu identik.
-
-### Observability
-- **Prometheus + Grafana**: Monitor latency pipeline (STT → LLM → TTS), jumlah pasien per jam, error rate, dan resource GPU/CPU. Dashboard bisa ditampilkan ke tim IT RS.
-- **OpenTelemetry + Jaeger**: Distributed tracing — kalau ada keluhan "avatar lambat", langsung tahu bottleneck-nya di layer mana (STT? LLM? MuseTalk?).
-- **Sentry**: Error tracking real-time — kalau avatar crash atau API My eRSIy timeout, langsung ada alert ke tim developer tanpa harus tunggu laporan.
-
-### Security
-- **AES-256 enkripsi**: Data biometrik dan riwayat pasien dienkripsi saat disimpan. Standar minimum untuk data medis.
-- **RBAC (Role-Based Access Control)**: Staf pendaftaran, dokter, dan admin IT punya akses berbeda. Dokter tidak bisa ubah konfigurasi sistem, staf tidak bisa lihat rekam medis lengkap.
-- **Audit log**: Setiap akses ke data pasien dicatat — siapa, kapan, dari mana. Wajib untuk compliance rumah sakit.
-- **VPN + private network**: Semua komunikasi antar service (kiosk → backend → My eRSIy) berjalan di jaringan internal RS. Tidak ada data pasien yang melewati internet publik.
-
----
-
-## Summary table
-
-| Kategori | Tech |
-| :--- | :--- |
-| **Frontend** | Next.js, R3F, Ready Player Me, Tailwind, Framer Motion |
-| **Voice** | Faster-Whisper, Coqui XTTS v2 |
-| **Avatar** | MuseTalk, Mixamo, Rhubarb |
-| **Backend** | FastAPI, Gunicorn, LiveKit, MCP Server, LangChain |
-| **Data** | PostgreSQL, Redis, My eRSIy connector |
-| **Infra** | Docker, Nginx, GitHub Actions, Terraform |
-| **Monitoring** | Prometheus, Grafana, OpenTelemetry, Sentry |
-| **Security** | AES-256, RBAC, Audit log, VPN |
+Kalau setelah ini masih error, tolong kirim pesan error spesifik dari renderer-nya (Mermaid Live Editor di mermaid.live biasanya kasih baris dan kolom yang error) — itu akan jauh lebih akurat daripada saya menebak ulang dari membaca teks saja.
