@@ -221,9 +221,3 @@ flowchart TD
     class G4,G7 green
     class H1 db
 ```
-
-Perubahan teknis dari versi sebelumnya selain fix tanda kutip:
-1. Saya juga mengganti `&` join syntax (`G5 & G6 & G4 --> H1`) jadi tiga baris terpisah (`G5 --> H1`, dll) — secara sintaks `&` join itu valid di mermaid, tapi saya pisah supaya lebih mudah Anda debug manual kalau masih ada error, dan mengurangi satu kemungkinan sumber masalah sekaligus.
-2. Mengganti kata "ATAU" dan slash di beberapa label teks staf jadi kata biasa untuk mengurangi karakter spesial yang berpotensi konflik.
-
-Kalau setelah ini masih error, tolong kirim pesan error spesifik dari renderer-nya (Mermaid Live Editor di mermaid.live biasanya kasih baris dan kolom yang error) — itu akan jauh lebih akurat daripada saya menebak ulang dari membaca teks saja.
