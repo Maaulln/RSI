@@ -26,7 +26,6 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 - Integrasi data eksternal: My eRSIy API, SIM RS, API BPJS/JKN
 - IoT: Bluetooth smart weight scale, laser sensor tinggi badan
 - Dashboard admin: konfigurasi node, manajemen avatar, monitoring sistem
-- Notifikasi: WhatsApp Business API / n8n
 
 ### Out-of-Scope (Tim IT)
 
@@ -423,7 +422,6 @@ flowchart TD
 | TTS | Model TTS lokal (belum ditentukan) |
 | Database | SurrealDB atau database yang kompatibel dengan DARSI |
 | IoT | Bluetooth (weight scale), protocol TBD (laser sensor) |
-| Notifikasi | WhatsApp Business API / n8n |
 | Avatar runtime | VRM format, dirender via web browser |
 
 ### Integrasi Eksternal
@@ -433,7 +431,6 @@ flowchart TD
 | My eRSIy API | Ambil & update riwayat kunjungan pasien | Perlu konfirmasi |
 | SIM RS | Input data pendaftaran, resep, antrian | Perlu konfirmasi |
 | API BPJS/JKN | Verifikasi kepesertaan via NIK/fingerprint/wajah | Perlu konfirmasi |
-| WhatsApp Business API | Notifikasi giliran pasien | Perlu akun WA Business |
 
 ### Arsitektur Komponen
 
@@ -450,7 +447,6 @@ Tablet Android (WebView) + Webcam + Fingerprint + Speaker + Mic
 ├── LLM Triage Service (Ollama)
 ├── TTS Service
 ├── Dialog Flow Manager
-├── Notification Service (WhatsApp / n8n)
 └── Admin API
         |
         |------------------------------|
@@ -600,7 +596,7 @@ flowchart TD
 | Nama | Fokus | Komponen |
 |---|---|---|
 | Irawan | AI Layer | STT (Whisper + uji bahasa Jawa/Madura), LLM triage (Ollama + prompt engineering), TTS, Dialog Flow Manager, OCR KTP & surat rujukan, Face recognition |
-| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, Notification Service (WA/n8n), IoT (weight scale + laser sensor), SurrealDB |
+| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, IoT (weight scale + laser sensor), SurrealDB |
 | Bagus | Frontend + Backend Support | Dashboard admin UI (manajemen node, avatar, monitoring, triage rules), UI kiosk node (layar pasien, voice interface, fallback touch), WebView Android wrapper, bantu endpoint Admin API |
 
 > Catatan: pembagian ini untuk keperluan laporan KP masing-masing. Pengerjaan tetap bersifat kolaboratif terutama di tahap awal.
