@@ -394,22 +394,23 @@ flowchart TD
 
 | Layer | Teknologi | Keterangan |
 |---|---|---|
-| Frontend — Kiosk UI | **Next.js 14 (App Router)** + Tailwind CSS | Dijalankan via Android WebView; build sebagai static export |
-| Frontend — Dashboard Admin | **Next.js 14 (App Router)** + Tailwind CSS | Dibuka via browser desktop oleh admin RS |
-| Backend | **FastAPI** (Python) + Gunicorn + Uvicorn | ASGI server; support WebSocket native |
+| Frontend — Kiosk UI | <img src="https://skillicons.dev/icons?i=nextjs" height="20"/> <img src="https://skillicons.dev/icons?i=tailwind" height="20"/> **Next.js 14 (App Router)** + Tailwind CSS | Dijalankan via Android WebView; build sebagai static export |
+| Frontend — Dashboard Admin | <img src="https://skillicons.dev/icons?i=nextjs" height="20"/> <img src="https://skillicons.dev/icons?i=tailwind" height="20"/> **Next.js 14 (App Router)** + Tailwind CSS | Dibuka via browser desktop oleh admin RS |
+| Backend | <img src="https://skillicons.dev/icons?i=fastapi" height="20"/> <img src="https://skillicons.dev/icons?i=py" height="20"/> **FastAPI** (Python) + Gunicorn + Uvicorn | ASGI server; support WebSocket native |
 | Voice Pipeline | **LiveKit** | Orkestrasi pipeline STT → LLM → TTS + barge-in |
-| LLM | **Ollama** + model lokal (Mistral 7B atau sejenisnya) | On-premise; data pasien tidak keluar jaringan RS |
-| STT | **Faster-Whisper** | Support Indonesia, Jawa, Madura; berjalan lokal |
-| TTS | **Coqui XTTS v2** | Open-source, natural voice, tanpa biaya per karakter |
-| Lip Sync | **MuseTalk** (GPU) + **Rhubarb Lip Sync** | Real-time sinkronisasi bibir avatar |
-| Database utama | **PostgreSQL** | Sesi kiosk, triage log, analytics, user admin |
-| Database integrasi | **MySQL** | Kompatibilitas integrasi SIM RS & data eksternal RS |
-| Caching | **Redis** | Session state per pasien; cache respons LLM berulang |
-| Avatar runtime | **Three.js** + React Three Fiber | Render avatar VRM/glTF di browser tanpa game engine |
-| Avatar source | **Ready Player Me** (format glTF/GLB) | Disediakan tim MMB; dashboard hanya tampilkan thumbnail |
-| IoT | Bluetooth (weight scale), protocol TBD (laser sensor) | Dikerjakan Yardan |
-| Infrastruktur | **Docker + Docker Compose** / Kubernetes, **Nginx** | Kontainerisasi semua service; Nginx sebagai reverse proxy |
-| CI/CD | **GitHub Actions** | Build, test, dan deploy otomatis ke server |
+| LLM Serving | **Ollama** (dev: Mac) / GPU server (prod) | Footprint rendah, kompatibel Mac native, performa setara vLLM di concurrency <16 |
+| LLM Model | <img src="https://skillicons.dev/icons?i=pytorch" height="20"/> **Sahabat-AI 8B** / Qwen3-8B, format Q4\_K\_M GGUF | Rasio kualitas/VRAM terbaik (~4.6 GB); model lokal bahasa Indonesia |
+| Embedding (RAG) | <img src="https://skillicons.dev/icons?i=pytorch" height="20"/> **BGE-M3** | Multilingual 100+ bahasa, hybrid dense+sparse, self-host single GPU |
+| STT | **Whisper Large-v3-Turbo** via faster-whisper (server) / MLX-Whisper (Mac dev) | 6x lebih cepat dari Large-v3; native Apple Silicon untuk dev |
+| TTS | **VITS/MMS Indonesia** + eksperimen **Chatterbox-ID** | Ringan, jalan di CPU/MPS untuk dev; Chatterbox-ID untuk kualitas lebih natural |
+| OCR | **Chandra** (HF mode dev Mac, vLLM prod) | Optimal untuk dokumen pendek-terstruktur (KTP, surat rujukan); output JSON |
+| Face Recognition | <img src="https://skillicons.dev/icons?i=opencv" height="20"/> **InsightFace ArcFace** (CPU) | Model kecil, tidak butuh GPU; cukup untuk verifikasi 1:1 |
+| Database utama | <img src="https://skillicons.dev/icons?i=postgres" height="20"/> **PostgreSQL** | Sesi kiosk, triage log, analytics, user admin |
+| Database integrasi | <img src="https://skillicons.dev/icons?i=mysql" height="20"/> **MySQL** | Kompatibilitas integrasi SIM RS & data eksternal RS |
+| Caching | <img src="https://skillicons.dev/icons?i=redis" height="20"/> **Redis** | Session state per pasien; cache respons LLM berulang |
+| IoT | **Bluetooth** (weight scale), protocol TBD (laser sensor) | Dikerjakan Yardan |
+| Infrastruktur | <img src="https://skillicons.dev/icons?i=docker" height="20"/> <img src="https://skillicons.dev/icons?i=kubernetes" height="20"/> <img src="https://skillicons.dev/icons?i=nginx" height="20"/> **Docker + Docker Compose** / Kubernetes, **Nginx** | Kontainerisasi semua service; Nginx sebagai reverse proxy |
+| CI/CD | <img src="https://skillicons.dev/icons?i=githubactions" height="20"/> **GitHub Actions** | Build, test, dan deploy otomatis ke server |
 
 ### Integrasi Eksternal
 
@@ -421,27 +422,55 @@ flowchart TD
 
 ### Arsitektur Komponen
 
-```
-[Node Hardware]
-Tablet Android (WebView) + Webcam + Fingerprint + Speaker + Mic
-        |
-        | HTTP / WebSocket
-        v
-[Backend — FastAPI]
-├── Auth & Session Service
-├── Device Integration Service (fingerprint, webcam, OCR)
-├── STT Service (Whisper)
-├── LLM Triage Service (Ollama)
-├── TTS Service
-├── Dialog Flow Manager
-└── Admin API
-        |
-        |------------------------------|----------------------|
-        v                              v                      v
-[External]                       [Database]              [Cache]
-├── My eRSIy API                 ├── PostgreSQL           Redis
-├── SIM RS                       └── MySQL
-└── API BPJS/JKN
+```mermaid
+flowchart TD
+    subgraph CLIENT["Klien"]
+        ADMIN["🖥️ Admin Browser\nDesktop / Laptop"]
+        NODE["📱 Node Hardware\nTablet Android WebView\nWebcam · Fingerprint · Speaker · Mic"]
+    end
+
+    subgraph BE["Backend — FastAPI"]
+        AUTH["Auth & Session Service"]
+        DEV["Device Integration Service\nFingerprint · Webcam · OCR · Face"]
+        STT_SVC["STT Service\nWhisper Large-v3-Turbo"]
+        LLM_SVC["LLM Triage Service\nOllama · Sahabat-AI 8B"]
+        TTS_SVC["TTS Service\nVITS/MMS Indonesia"]
+        RAG_SVC["RAG Service\nBGE-M3"]
+        DIALOG["Dialog Flow Manager\nLiveKit"]
+        ADMINAPI["Admin API"]
+    end
+
+    subgraph DB["Database"]
+        PG[("PostgreSQL\nsesi · log · analytics")]
+        MY[("MySQL\nintegrasi SIM RS")]
+    end
+
+    CACHE[("Redis\ncache · session state")]
+
+    subgraph EXT["Integrasi Eksternal"]
+        ERSI["My eRSIy API"]
+        SIMRS["SIM RS"]
+        BPJS["API BPJS/JKN"]
+    end
+
+    ADMIN -->|"HTTPS"| BE
+    NODE -->|"HTTPS / WSS"| BE
+
+    BE --> DB
+    BE --> CACHE
+    BE --> EXT
+
+    classDef client fill:#7F77DD,stroke:#534AB7,color:#fff
+    classDef backend fill:#1D9E75,stroke:#0F6E56,color:#fff
+    classDef db fill:#378ADD,stroke:#185FA5,color:#fff
+    classDef cache fill:#E24B4A,stroke:#A32D2D,color:#fff
+    classDef ext fill:#888780,stroke:#5F5E5A,color:#fff
+
+    class ADMIN,NODE client
+    class AUTH,DEV,STT_SVC,LLM_SVC,TTS_SVC,RAG_SVC,DIALOG,ADMINAPI backend
+    class PG,MY db
+    class CACHE cache
+    class ERSI,SIMRS,BPJS ext
 ```
 
 ### System Flow

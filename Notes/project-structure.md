@@ -38,10 +38,10 @@
 │         │  :5432 │ │  :3306  │ │ :6379  │ │ :11434 │          │
 │         └────────┘ └─────────┘ └────────┘ └────────┘          │
 │                                                                  │
-│         ┌──────────┐ ┌──────────┐ ┌──────────┐                 │
-│         │ Whisper  │ │   TTS    │ │MuseTalk  │                 │
-│         │  :8001   │ │  :8002   │ │  :8003   │                 │
-│         └──────────┘ └──────────┘ └──────────┘                 │
+│         ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│         │ Whisper  │ │   TTS    │ │   OCR    │ │  Face    │   │
+│         │  :8001   │ │  :8002   │ │  :8003   │ │  :8004   │   │
+│         └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
 └─────────────────────────────────────────────────────────────────┘
           │                                          │
           ▼                                          ▼
@@ -64,7 +64,7 @@ GitHub Org / Akun Tim
 ├── darsi-admin/          ← Bagus — Dashboard Admin (Next.js)
 ├── darsi-kiosk/          ← Bagus — Kiosk UI (Next.js)
 ├── darsi-backend/        ← Yardan — FastAPI + DB + Integrasi
-├── darsi-ai/             ← Irawan — Whisper + Ollama + TTS + LiveKit
+├── darsi-ai/             ← Irawan — STT + LLM + TTS + OCR + Face Recognition
 └── RSI/                  ← Tim (repo ini) — Dokumentasi & PRD
 ```
 
@@ -142,30 +142,28 @@ darsi-admin/
 
 ### 2. `darsi-kiosk` — Kiosk UI (Bagus)
 
-**Tech:** Next.js 14 (static export), Tailwind CSS, Three.js + React Three Fiber (render avatar), native WebSocket
+**Tech:** Next.js 14 (static export), Tailwind CSS, native WebSocket
 
 ```
 darsi-kiosk/
 ├── public/
-│   └── assets/                     # Avatar thumbnails, ikon
+│   └── assets/                     # Ikon gejala, ilustrasi UI
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx              # Layout kiosk (fullscreen, no nav)
 │   │   ├── page.tsx                # Screen idle / standby
 │   │   └── session/
-│   │       ├── identify/page.tsx   # Fingerprint / OCR KTP
+│   │       ├── identify/page.tsx   # Fingerprint / Face / OCR KTP
 │   │       ├── symptoms/page.tsx   # Input gejala (voice + touch)
 │   │       ├── result/page.tsx     # Rekomendasi poli + cetak tiket
 │   │       └── navigation/page.tsx # Panduan arah
 │   ├── components/
-│   │   ├── Avatar3D.tsx            # Three.js canvas — render VRM avatar
 │   │   ├── VoiceInput.tsx          # Mic button + waveform display
 │   │   ├── TouchFallback.tsx       # Keyboard on-screen / ikon gejala
 │   │   └── CallStaff.tsx           # Tombol Panggil Petugas (selalu visible)
 │   ├── hooks/
-│   │   ├── useVoice.ts             # Mic recording → kirim ke STT
-│   │   ├── useNodeSession.ts       # WebSocket session dengan backend
-│   │   └── useAvatarSync.ts        # Sinkronisasi lip-sync dari TTS
+│   │   ├── useVoice.ts             # Mic recording → kirim ke STT service
+│   │   └── useNodeSession.ts       # WebSocket session dengan backend
 │   └── lib/
 │       ├── api.ts
 │       └── ws.ts
@@ -219,16 +217,22 @@ darsi-backend/
 
 ```
 darsi-ai/
-├── stt/                            # Faster-Whisper service
+├── stt/                            # Whisper Large-v3-Turbo via faster-whisper
+│   ├── main.py                     # FastAPI wrapper, endpoint /transcribe
+│   └── Dockerfile
+├── tts/                            # VITS/MMS Indonesia + Chatterbox-ID
+│   ├── main.py                     # FastAPI wrapper, endpoint /synthesize
+│   └── Dockerfile
+├── ocr/                            # Chandra (HF mode dev / vLLM prod)
+│   ├── main.py                     # Endpoint /ocr/ktp, /ocr/rujukan
+│   └── Dockerfile
+├── face/                           # InsightFace ArcFace (CPU)
+│   ├── main.py                     # Endpoint /face/verify
+│   └── Dockerfile
+├── rag/                            # BGE-M3 embedding + vector store
 │   ├── main.py
 │   └── Dockerfile
-├── tts/                            # Coqui XTTS v2 service
-│   ├── main.py
-│   └── Dockerfile
-├── lipsync/                        # MuseTalk + Rhubarb
-│   ├── main.py
-│   └── Dockerfile
-├── dialog/                         # Dialog Flow Manager
+├── dialog/                         # Dialog Flow Manager + LiveKit integration
 │   ├── main.py
 │   └── flows/
 │       ├── registration.yaml       # NODE-01
@@ -247,17 +251,19 @@ File `docker-compose.yml` di `darsi-backend` mengatur semua service:
 ```yaml
 # Gambaran service (bukan file lengkap)
 services:
-  nginx:          # Reverse proxy
-  admin:          # Next.js Admin Dashboard  (port 3001)
-  kiosk:          # Next.js Kiosk UI        (port 3000)
-  backend:        # FastAPI                 (port 8000)
-  postgres:       # PostgreSQL              (port 5432)
-  mysql:          # MySQL                   (port 3306)
-  redis:          # Redis                   (port 6379)
-  ollama:         # Ollama LLM              (port 11434)
-  whisper:        # Faster-Whisper STT      (port 8001)
-  tts:            # Coqui TTS               (port 8002)
-  lipsync:        # MuseTalk                (port 8003)
+  nginx:          # Reverse proxy + SSL termination
+  admin:          # Next.js Admin Dashboard       (port 3001)
+  kiosk:          # Next.js Kiosk UI              (port 3000)
+  backend:        # FastAPI                       (port 8000)
+  postgres:       # PostgreSQL — data utama       (port 5432)
+  mysql:          # MySQL — integrasi SIM RS      (port 3306)
+  redis:          # Redis — cache + session       (port 6379)
+  ollama:         # Ollama LLM server             (port 11434)
+  whisper:        # Whisper Large-v3-Turbo STT    (port 8001)
+  tts:            # VITS/MMS TTS                  (port 8002)
+  ocr:            # Chandra OCR                   (port 8003)
+  face:           # InsightFace ArcFace           (port 8004)
+  rag:            # BGE-M3 embedding service      (port 8005)
 ```
 
 ---
@@ -285,6 +291,9 @@ REDIS_URL=redis://redis:6379
 OLLAMA_URL=http://ollama:11434
 STT_URL=http://whisper:8001
 TTS_URL=http://tts:8002
+OCR_URL=http://ocr:8003
+FACE_URL=http://face:8004
+RAG_URL=http://rag:8005
 SECRET_KEY=...
 ```
 
