@@ -1,18 +1,52 @@
 # Product Requirements Document (PRD)
 # DARSI Customer Service — RSI A. Yani Surabaya
 
-**Versi:** 1.1 (Draft)
+**Versi:** 1.2 (Draft)
 **Terakhir diperbarui:** 30 Juni 2026
 **Tim:** IT — KP PENS PSDKU Lamongan 2024
 **Status:** In Review
 
-## 1. Overview
+## Tim & Pembagian Jobdesk
 
-DARSI Customer Service (DARSI-CS) adalah ekosistem AI assistant berbasis node yang dirancang untuk memandu pasien RSI A. Yani Surabaya secara mandiri di sepanjang alur pelayanan — mulai dari pendaftaran hingga pengambilan obat. Sistem ini lahir dari kebutuhan untuk mengoptimalkan customer service yang sudah tersedia namun belum dimanfaatkan secara optimal, terutama oleh pasien lansia dan mereka yang tidak melek teknologi.
+| Nama | Fokus | Komponen |
+|---|---|---|
+| Irawan | AI Layer | STT (Whisper + uji bahasa Jawa/Madura), LLM triage (Ollama + prompt engineering), TTS, Dialog Flow Manager, OCR KTP & surat rujukan, face recognition |
+| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, IoT (weight scale + laser sensor), PostgreSQL + MySQL + Redis |
+| Bagus | Frontend + Backend Support | Dashboard admin UI (manajemen node, avatar, monitoring, triage rules), UI kiosk node (layar pasien, voice interface, fallback touch), WebView Android wrapper, bantu endpoint Admin API |
 
-Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-titik strategis RS. Setiap node menampilkan avatar AI di layar yang berperan seperti petugas RSI sungguhan — dapat merespons suara pasien, memberikan arahan kontekstual, dan memandu langkah berikutnya. Inisiatif ini berasal dari diskusi antara tim akademik PENS (Pak Amma) dan calon Wakil Direktur RSI A. Yani, sehingga sudah memiliki buy-in dari level manajemen rumah sakit. Sistem DARSI existing yang menjadi baseline referensi dapat diakses di [sapadarsi.hcm-lab.id](https://sapadarsi.hcm-lab.id).
+> [!NOTE]
+> Pembagian ini untuk keperluan laporan KP masing-masing. Pengerjaan tetap bersifat kolaboratif terutama di tahap awal.
 
-## 2. Scope
+## 1. Latar Belakang & Problem Statement
+
+RSI A. Yani Surabaya melayani ratusan pasien setiap hari, namun proses navigasi mandiri pasien masih bergantung sepenuhnya pada staf manusia. Situasi ini menciptakan beberapa masalah nyata yang berulang setiap hari:
+
+- **Pasien salah poli** — pasien datang ke poli yang keliru karena tidak memahami sistem rujukan atau tidak bisa membaca papan petunjuk, sehingga harus kembali ke pendaftaran dan mengantri ulang
+- **Beban staf berlebih** — petugas pendaftaran menangani triage secara manual sambil melayani antrian panjang, menyebabkan kelelahan dan potensi error
+- **Hambatan aksesibilitas** — pasien lansia (60+) dan pasien dari daerah yang terbiasa berbahasa Jawa atau Madura kesulitan berkomunikasi dengan sistem pendaftaran berbasis teks atau papan petunjuk tertulis
+- **Bottleneck di jam sibuk** — proses identifikasi, triage, dan pemberian tiket dilakukan satu per satu oleh staf, tidak bisa paralel
+
+Inisiatif DARSI Customer Service (DARSI-CS) lahir dari diskusi antara tim akademik PENS (Pak Amma) dan calon Wakil Direktur RSI A. Yani, sehingga sudah memiliki dukungan dari level manajemen rumah sakit. Sistem baseline yang menjadi referensi dapat diakses di [sapadarsi.hcm-lab.id](https://sapadarsi.hcm-lab.id).
+
+**Solusi yang diusulkan:** Jaringan node AI assistant yang tersebar di titik-titik strategis RS. Setiap node menampilkan avatar AI yang berperan seperti petugas RSI sungguhan — dapat merespons suara pasien, memberikan arahan kontekstual, dan memandu langkah berikutnya secara mandiri tanpa bergantung pada staf.
+
+## 2. Tujuan & Metrik Keberhasilan
+
+Berikut adalah target terukur yang mendefinisikan keberhasilan sistem DARSI-CS:
+
+| Metrik | Kondisi Saat Ini | Target |
+|---|---|---|
+| Waktu registrasi per pasien | ~5–8 menit (manual) | < 2 menit via node |
+| Tingkat pasien salah poli | Tidak terukur (estimasi tinggi) | < 5% |
+| Beban manual staf pendaftaran | 100% ditangani staf | Berkurang ≥ 40% |
+| Akurasi rekomendasi poli (LLM triage) | — | ≥ 85% untuk keluhan umum |
+| Akurasi STT Bahasa Indonesia | — | ≥ 90% |
+| Akurasi STT Bahasa Jawa/Madura | — | ≥ 85% |
+| Latensi respons node (STT → LLM → TTS) | — | < 5 detik end-to-end |
+| Uptime sistem jam operasional (06.00–20.00) | — | ≥ 99% |
+| Tingkat kepuasan pengguna (pasien + staf) | — | ≥ 4.0 / 5.0 |
+
+## 3. Scope
 
 ### In-Scope (Tim IT)
 
@@ -30,7 +64,7 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 - Pengembangan aplikasi mobile pasien
 - Sistem rekam medis elektronik (EMR/EHR) — hanya konsumsi data, tidak modifikasi
 
-## 3. User Personas & Use Cases
+## 4. User Personas & Use Cases
 
 ### Persona 1 — Pasien Lansia (Pengguna Utama)
 
@@ -68,7 +102,7 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 - Monitor status node (online/offline, jumlah interaksi, error rate)
 - Lihat log percakapan untuk evaluasi akurasi triage
 
-## 4. Node Architecture
+## 5. Node Architecture
 
 Node adalah unit fisik + software yang menjadi titik interaksi antara pasien dan sistem AI. Setiap node dapat dikonfigurasi karakternya sesuai lokasi dan peran.
 
@@ -99,14 +133,14 @@ Setiap node memiliki properti yang dapat dikonfigurasi:
 - Konteks lokasi (menentukan dialog flow yang aktif)
 - Status aktif/nonaktif
 
-## 5. Features & Requirements
+## 6. Features & Requirements
 
 Prioritas fitur menggunakan skema:
 - **P0** — Must have, sistem tidak bisa jalan tanpa ini
 - **P1** — Should have, penting untuk pengalaman yang baik
 - **P2** — Nice to have, bisa dikerjakan di iterasi berikutnya
 
-### 5.1 Integrasi Perangkat
+### 6.1 Integrasi Perangkat
 
 #### F-DEV-01: Fingerprint via URU Device
 
@@ -123,7 +157,7 @@ Prioritas fitur menggunakan skema:
 **Deskripsi:** Opsi verifikasi sidik jari langsung dari permukaan layar tablet tanpa alat tambahan. Membutuhkan tablet dengan sensor fingerprint terintegrasi.
 **Acceptance Criteria:**
 - Akurasi pembacaan minimal setara dengan URU device
-- Seamless fallback dari URU device jika tidak tersedia
+- Fallback seamless dari URU device jika tidak tersedia
 - Catatan: perlu riset hardware tablet yang support fitur ini
 
 #### F-DEV-03: Face Recognition
@@ -170,7 +204,7 @@ Prioritas fitur menggunakan skema:
 - Data terkirim ke backend dalam < 3 detik
 - Protokol komunikasi ke web app perlu ditentukan (open question)
 
-### 5.2 AI Backend
+### 6.2 AI Backend
 
 #### F-AI-01: Speech-to-Text (STT)
 
@@ -219,7 +253,7 @@ Prioritas fitur menggunakan skema:
 - Tombol fisik / area besar "Panggil Petugas" tersedia di setiap node layar
 - Log semua error untuk evaluasi dan perbaikan model
 
-### 5.3 Voice Interaction & Dialog Flow
+### 6.3 Voice Interaction & Dialog Flow
 
 #### F-VOICE-01: Alur Pendaftaran (NODE-01)
 
@@ -314,7 +348,7 @@ flowchart TD
     BPJS["Tanggungan BPJS\nLangsung ambil obat"]
     UMUM["Bayar di kasir\nNode pandu ke kasir"]
     KASIR["Kasir pembayaran"]
-    DONE(["Selesai\nRingkasan dikirim via WA"])
+    DONE(["Selesai\nRingkasan dikirim via aplikasi"])
     HELP["Panggil petugas\nJika pasien kebingungan"]
 
     START --> NAV
@@ -323,7 +357,7 @@ flowchart TD
     Q1 -- Tidak ada --> MANUAL
     SCAN & MANUAL --> CHECK
     CHECK --> Q2
-    Q2 -- Belum --> WAIT --> NOTIF --> CALL
+    Q2 -- Belum --> WAIT --> CALL
     Q2 -- Sudah --> CALL
     CALL --> Q3
     Q3 -- Racik --> RACIK
@@ -340,7 +374,7 @@ flowchart TD
 - Estimasi waktu tunggu ditampilkan di layar node dan diperbarui real-time
 - Jika pasien tidak berinteraksi selama 30 detik, node menawarkan bantuan secara proaktif
 
-### 5.4 Dashboard Admin
+### 6.4 Dashboard Admin
 
 #### F-DASH-01: Manajemen Node
 
@@ -388,7 +422,7 @@ flowchart TD
 - Avatar memanggil nomor antrian dengan suara jelas
 - Tampilan nomor antrian besar dan mudah dibaca dari jarak 3 meter
 
-## 6. System Architecture
+## 7. System Architecture
 
 ### Tech Stack
 
@@ -473,45 +507,36 @@ flowchart TD
     class ERSI,SIMRS,BPJS ext
 ```
 
-### System Flow
-
-## Alur Alur Pelayanan (Flowchart)
+### Alur Pelayanan (System Flow)
 
 ```mermaid
 flowchart TD
-    %% QUICK EMERGENCY SCREEN (BARU - paling depan)
     A1[Datang ke kiosk]
     A0["Quick screen\nApakah ini darurat? + red-flag listening"]
     A0d{Darurat jelas?}
 
-    %% IDENTIFIKASI
     B1[Identifikasi pasien\nFingerprint / Face / NIK manual]
     B2{Pasien terdaftar?}
     B3[Ambil riwayat\ndari My eRSIy API]
     B4[Tampilkan riwayat\nKunjungan, obat, alergi]
     B5[Daftar baru\nInput data identitas]
 
-    %% INPUT GEJALA
     C1[Input gejala detail\nForm ikon / voice / teks bebas]
 
-    %% TRIAGE
     D1[Triage engine\nLLM ekstrak + rule rekomendasi]
     D2{Red-flag darurat\nterdeteksi dari input detail?}
     D3[Arahkan ke IGD\nStaf dipanggil langsung]
     D1b{Confidence tinggi?}
-    D1c[Staf review and override manual]
+    D1c[Staf review dan override manual]
 
-    %% REKOMENDASI and NAVIGASI
     E1[Rekomendasi poli + cetak tiket\nNama poli, lantai, warna jalur, no. antrian]
     E2[Navigasi ke poli\nGaris lantai / signage / voice]
 
-    %% DI POLI
     F1[Tunggu antrian]
     F1a[Panggilan suara\nGiliran mendekat]
     F1b{Pasien/staf merasa\nsalah poli?}
     F2[Diperiksa dokter\nRiwayat ditampilkan ke dokter]
 
-    %% POST POLI non-exclusive
     G1[Hasil pemeriksaan]
     G2{Perlu resep?}
     G3{Perlu rujukan\nlab/radiologi?}
@@ -520,10 +545,8 @@ flowchart TD
     G7[Ringkasan via aplikasi]
     G4[Selesai / pulang]
 
-    %% UPDATE
     H1[(Update riwayat\nke My eRSIy)]
 
-    %% CONNECTIONS
     A1 --> A0 --> A0d
     A0d -- Ya --> D3
     A0d -- Tidak atau tidak yakin --> B1
@@ -553,7 +576,6 @@ flowchart TD
     G6 --> G7
     G4 --> H1
 
-    %% STYLING
     classDef teal fill:#1D9E75,stroke:#0F6E56,color:#E1F5EE
     classDef purple fill:#7F77DD,stroke:#534AB7,color:#EEEDFE
     classDef blue fill:#378ADD,stroke:#185FA5,color:#E6F1FB
@@ -573,12 +595,12 @@ flowchart TD
     class H1 db
 ```
 
-## 7. Non-Functional Requirements
+## 8. Non-Functional Requirements
 
 ### Performa
 - Response time node ke pasien (STT ke LLM ke TTS): < 5 detik end-to-end
 - Sistem harus mampu menangani minimal 10 node aktif secara bersamaan
-- Uptime minimal 99% selama jam operasional RS (06.00-20.00)
+- Uptime minimal 99% selama jam operasional RS (06.00–20.00)
 
 ### Bahasa & Aksesibilitas
 - Bahasa utama: Bahasa Indonesia
@@ -603,18 +625,34 @@ flowchart TD
 - Jika STT gagal 2 kali berturut-turut, sistem beralih ke mode touch otomatis
 - Jika avatar tidak dapat dirender, sistem tetap berfungsi dengan suara saja
 
-## 8. Pembagian Jobdesk Tim IT
+## 9. Timeline & Roadmap
 
-| Nama | Fokus | Komponen |
-|---|---|---|
-| Irawan | AI Layer | STT (Whisper + uji bahasa Jawa/Madura), LLM triage (Ollama + prompt engineering), TTS, Dialog Flow Manager, OCR KTP & surat rujukan, Face recognition |
-| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, IoT (weight scale + laser sensor), PostgreSQL + MySQL + Redis |
-| Bagus | Frontend + Backend Support | Dashboard admin UI (manajemen node, avatar, monitoring, triage rules), UI kiosk node (layar pasien, voice interface, fallback touch), WebView Android wrapper, bantu endpoint Admin API |
+| Fase | Durasi | Fokus | Deliverable |
+|---|---|---|---|
+| Fase 1 — Fondasi | Minggu 1–2 | Setup infrastruktur, repo, environment dev, mock data | Semua repo berjalan di lokal, mock server aktif |
+| Fase 2 — AI Layer | Minggu 3–5 | STT (Bahasa Indonesia), TTS, LLM triage dasar, dialog flow NODE-01 | Demo alur pendaftaran end-to-end di lokal |
+| Fase 3 — Dashboard Admin | Minggu 4–6 | Manajemen node (P0), manajemen avatar, overview & monitoring | Dashboard Admin dapat dikunjungi & data node tampil |
+| Fase 4 — Kiosk UI | Minggu 5–7 | Layar idle, alur identifikasi, input gejala, tampil hasil, WebView Android | Kiosk berjalan di tablet Android |
+| Fase 5 — Integrasi | Minggu 7–9 | Koneksi backend real (ganti mock), WebSocket live, triage rules dashboard | Sistem berjalan end-to-end dengan data nyata |
+| Fase 6 — Fitur P1 | Minggu 9–11 | Face recognition, OCR surat rujukan, antrian obat, monitoring analytics | Fitur tambahan live |
+| Fase 7 — Polish & Demo | Minggu 11–12 | Bug fix, aksesibilitas, uji coba di RS, dokumentasi KP | Demo kepada pihak RS & pembimbing |
 
 > [!NOTE]
-> Catatan: pembagian ini untuk keperluan laporan KP masing-masing. Pengerjaan tetap bersifat kolaboratif terutama di tahap awal.
+> Timeline bersifat estimasi dan dapat bergeser tergantung ketersediaan akses API eksternal (BPJS, SIM RS). Fase 2, 3, dan 4 dapat berjalan paralel antar anggota tim.
 
-## 9. Open Questions
+## 10. Risiko & Mitigasi
+
+| # | Risiko | Kemungkinan | Dampak | Mitigasi |
+|---|---|---|---|---|
+| R-01 | API BPJS/JKN tidak dapat diakses selama periode KP | Tinggi | Tinggi — memblokir fitur identifikasi utama | Fallback ke input manual NIK; gunakan mock data untuk demo |
+| R-02 | Dokumentasi API SIM RS tidak tersedia atau tidak lengkap | Sedang | Tinggi — memblokir integrasi antrian dan resep | Gunakan mock SIM RS lokal; integrasi nyata menjadi deliverable opsional |
+| R-03 | Tablet Android yang digunakan tidak support fingerprint native | Sedang | Sedang — fitur F-DEV-02 tidak bisa diimplementasi | Gunakan URU device sebagai metode utama (sudah P0); F-DEV-02 digeser ke P2 |
+| R-04 | Akurasi STT bahasa Jawa/Madura di bawah threshold 85% | Tinggi | Sedang — pengalaman pasien lansia terdegradasi | Fokus Bahasa Indonesia dulu untuk demo; bahasa daerah sebagai eksperimen terpisah |
+| R-05 | Backend Yardan belum siap saat frontend perlu diintegrasikan | Tinggi | Sedang — frontend tidak bisa ditest dengan data nyata | Gunakan mock server (MSW) untuk development mandiri frontend |
+| R-06 | Latensi end-to-end melampaui 5 detik di hardware produksi | Sedang | Tinggi — pengalaman pasien terganggu, sistem tidak layak digunakan | Profiling pipeline STT→LLM→TTS; aktifkan streaming TTS; cache respons LLM yang sering diulang |
+| R-07 | GPU server tidak tersedia untuk MuseTalk / model berat | Sedang | Rendah — lip sync avatar tidak berjalan (sudah di-skip dari scope saat ini) | Abaikan lip sync untuk versi KP; avatar tampil statis atau animasi sederhana |
+
+## 11. Open Questions
 
 | # | Pertanyaan | Owner | Prioritas |
 |---|---|---|---|
