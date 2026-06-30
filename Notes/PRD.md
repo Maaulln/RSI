@@ -1,20 +1,16 @@
 # Product Requirements Document (PRD)
 # DARSI Customer Service — RSI A. Yani Surabaya
 
-**Versi:** 1.0 (Draft)
-**Terakhir diperbarui:** Juni 2026
+**Versi:** 1.1 (Draft)
+**Terakhir diperbarui:** 30 Juni 2026
 **Tim:** IT — KP PENS PSDKU Lamongan 2024
 **Status:** In Review
-
----
 
 ## 1. Overview
 
 DARSI Customer Service (DARSI-CS) adalah ekosistem AI assistant berbasis node yang dirancang untuk memandu pasien RSI A. Yani Surabaya secara mandiri di sepanjang alur pelayanan — mulai dari pendaftaran hingga pengambilan obat. Sistem ini lahir dari kebutuhan untuk mengoptimalkan customer service yang sudah tersedia namun belum dimanfaatkan secara optimal, terutama oleh pasien lansia dan mereka yang tidak melek teknologi.
 
 Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-titik strategis RS. Setiap node menampilkan avatar AI di layar yang berperan seperti petugas RSI sungguhan — dapat merespons suara pasien, memberikan arahan kontekstual, dan memandu langkah berikutnya. Inisiatif ini berasal dari diskusi antara tim akademik PENS (Pak Amma) dan calon Wakil Direktur RSI A. Yani, sehingga sudah memiliki buy-in dari level manajemen rumah sakit. Sistem DARSI existing yang menjadi baseline referensi dapat diakses di [sapadarsi.hcm-lab.id](https://sapadarsi.hcm-lab.id).
-
----
 
 ## 2. Scope
 
@@ -33,8 +29,6 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 - Desain wayfinding fisik (garis lantai, signage) ditangani pihak RSI langsung
 - Pengembangan aplikasi mobile pasien
 - Sistem rekam medis elektronik (EMR/EHR) — hanya konsumsi data, tidak modifikasi
-
----
 
 ## 3. User Personas & Use Cases
 
@@ -75,8 +69,6 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 - Monitor status node (online/offline, jumlah interaksi, error rate)
 - Lihat log percakapan untuk evaluasi akurasi triage
 
----
-
 ## 4. Node Architecture
 
 Node adalah unit fisik + software yang menjadi titik interaksi antara pasien dan sistem AI. Setiap node dapat dikonfigurasi karakternya sesuai lokasi dan peran.
@@ -107,8 +99,6 @@ Setiap node memiliki properti yang dapat dikonfigurasi:
 - Mode interaksi (voice-first / touch-first)
 - Konteks lokasi (menentukan dialog flow yang aktif)
 - Status aktif/nonaktif
-
----
 
 ## 5. Features & Requirements
 
@@ -181,8 +171,6 @@ Prioritas fitur menggunakan skema:
 - Data terkirim ke backend dalam < 3 detik
 - Protokol komunikasi ke web app perlu ditentukan (open question)
 
----
-
 ### 5.2 AI Backend
 
 #### F-AI-01: Speech-to-Text (STT)
@@ -231,8 +219,6 @@ Prioritas fitur menggunakan skema:
 - Setelah 2 kali gagal pahami input, sistem otomatis tawarkan opsi touch atau panggil petugas
 - Tombol fisik / area besar "Panggil Petugas" tersedia di setiap node layar
 - Log semua error untuk evaluasi dan perbaikan model
-
----
 
 ### 5.3 Voice Interaction & Dialog Flow
 
@@ -356,8 +342,6 @@ flowchart TD
 - Estimasi waktu tunggu ditampilkan di layar node dan diperbarui real-time
 - Jika pasien tidak berinteraksi selama 30 detik, node menawarkan bantuan secara proaktif
 
----
-
 ### 5.4 Dashboard Admin
 
 #### F-DASH-01: Manajemen Node
@@ -406,23 +390,28 @@ flowchart TD
 - Avatar memanggil nomor antrian dengan suara jelas
 - Tampilan nomor antrian besar dan mudah dibaca dari jarak 3 meter
 
----
-
 ## 6. System Architecture
 
 ### Tech Stack
 
-| Layer | Teknologi |
-|---|---|
-| Frontend (kiosk) | Web app — HTML/CSS/JS, WebView Android |
-| Frontend (dashboard) | React / framework web |
-| Backend | FastAPI (Python) |
-| LLM | Ollama (model lokal, belum ditentukan variannya) |
-| STT | Whisper atau model lokal sejenis |
-| TTS | Model TTS lokal (belum ditentukan) |
-| Database | SurrealDB atau database yang kompatibel dengan DARSI |
-| IoT | Bluetooth (weight scale), protocol TBD (laser sensor) |
-| Avatar runtime | VRM format, dirender via web browser |
+| Layer | Teknologi | Keterangan |
+|---|---|---|
+| Frontend — Kiosk UI | **Next.js 14 (App Router)** + Tailwind CSS | Dijalankan via Android WebView; build sebagai static export |
+| Frontend — Dashboard Admin | **Next.js 14 (App Router)** + Tailwind CSS | Dibuka via browser desktop oleh admin RS |
+| Backend | **FastAPI** (Python) + Gunicorn + Uvicorn | ASGI server; support WebSocket native |
+| Voice Pipeline | **LiveKit** | Orkestrasi pipeline STT → LLM → TTS + barge-in |
+| LLM | **Ollama** + model lokal (Mistral 7B atau sejenisnya) | On-premise; data pasien tidak keluar jaringan RS |
+| STT | **Faster-Whisper** | Support Indonesia, Jawa, Madura; berjalan lokal |
+| TTS | **Coqui XTTS v2** | Open-source, natural voice, tanpa biaya per karakter |
+| Lip Sync | **MuseTalk** (GPU) + **Rhubarb Lip Sync** | Real-time sinkronisasi bibir avatar |
+| Database utama | **PostgreSQL** | Sesi kiosk, triage log, analytics, user admin |
+| Database integrasi | **MySQL** | Kompatibilitas integrasi SIM RS & data eksternal RS |
+| Caching | **Redis** | Session state per pasien; cache respons LLM berulang |
+| Avatar runtime | **Three.js** + React Three Fiber | Render avatar VRM/glTF di browser tanpa game engine |
+| Avatar source | **Ready Player Me** (format glTF/GLB) | Disediakan tim MMB; dashboard hanya tampilkan thumbnail |
+| IoT | Bluetooth (weight scale), protocol TBD (laser sensor) | Dikerjakan Yardan |
+| Infrastruktur | **Docker + Docker Compose** / Kubernetes, **Nginx** | Kontainerisasi semua service; Nginx sebagai reverse proxy |
+| CI/CD | **GitHub Actions** | Build, test, dan deploy otomatis ke server |
 
 ### Integrasi Eksternal
 
@@ -449,11 +438,11 @@ Tablet Android (WebView) + Webcam + Fingerprint + Speaker + Mic
 ├── Dialog Flow Manager
 └── Admin API
         |
-        |------------------------------|
-        v                              v
-[External]                       [Database]
-├── My eRSIy API                 SurrealDB
-├── SIM RS
+        |------------------------------|----------------------|
+        v                              v                      v
+[External]                       [Database]              [Cache]
+├── My eRSIy API                 ├── PostgreSQL           Redis
+├── SIM RS                       └── MySQL
 └── API BPJS/JKN
 ```
 
@@ -557,8 +546,6 @@ flowchart TD
     class H1 db
 ```
 
----
-
 ## 7. Non-Functional Requirements
 
 ### Performa
@@ -589,19 +576,16 @@ flowchart TD
 - Jika STT gagal 2 kali berturut-turut, sistem beralih ke mode touch otomatis
 - Jika avatar tidak dapat dirender, sistem tetap berfungsi dengan suara saja
 
----
-
 ## 8. Pembagian Jobdesk Tim IT
 
 | Nama | Fokus | Komponen |
 |---|---|---|
 | Irawan | AI Layer | STT (Whisper + uji bahasa Jawa/Madura), LLM triage (Ollama + prompt engineering), TTS, Dialog Flow Manager, OCR KTP & surat rujukan, Face recognition |
-| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, IoT (weight scale + laser sensor), SurrealDB |
+| Yardan | Backend & Integrasi | FastAPI setup, Auth & Session Service, Device Integration Service, integrasi My eRSIy API + SIM RS + BPJS/JKN, IoT (weight scale + laser sensor), PostgreSQL + MySQL + Redis |
 | Bagus | Frontend + Backend Support | Dashboard admin UI (manajemen node, avatar, monitoring, triage rules), UI kiosk node (layar pasien, voice interface, fallback touch), WebView Android wrapper, bantu endpoint Admin API |
 
+> [!NOTE]
 > Catatan: pembagian ini untuk keperluan laporan KP masing-masing. Pengerjaan tetap bersifat kolaboratif terutama di tahap awal.
-
----
 
 ## 9. Open Questions
 
