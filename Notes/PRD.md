@@ -54,7 +54,6 @@ Inti dari sistem ini adalah jaringan node AI assistant yang tersebar di titik-ti
 
 **Use case utama:**
 - Input keluhan pasien via touchscreen jika lansia kesulitan berbicara ke sistem
-- Menerima notifikasi WhatsApp saat giliran pasien hampir tiba
 - Menggunakan node navigasi untuk mencari arah
 
 ### Persona 3 — Operator Loket BPJS
@@ -321,7 +320,6 @@ flowchart TD
     CHECK["Cek status resep\nKonfirmasi ke SIM RS"]
     Q2{"Resep sudah\ndiproses?"}
     WAIT["Masuk antrian obat\nNode tampilkan estimasi waktu"]
-    NOTIF["Notifikasi WA\nSaat giliran dekat"]
     CALL["Avatar memanggil\nnomor antrian via TTS"]
     Q3{"Jenis obat"}
     RACIK["Loket obat racik\nNode arahkan ke loket kiri"]
@@ -491,7 +489,7 @@ flowchart TD
 
     %% DI POLI
     F1[Tunggu antrian]
-    F1a[Notifikasi WA\nGiliran mendekat]
+    F1a[Panggilan suara\nGiliran mendekat]
     F1b{Pasien/staf merasa\nsalah poli?}
     F2[Diperiksa dokter\nRiwayat ditampilkan ke dokter]
 
@@ -501,7 +499,7 @@ flowchart TD
     G3{Perlu rujukan\nlab/radiologi?}
     G5[Arahkan ke apotek]
     G6[Arahkan ke lab]
-    G7[Ringkasan via WA]
+    G7[Ringkasan via aplikasi]
     G4[Selesai / pulang]
 
     %% UPDATE
