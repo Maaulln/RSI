@@ -1,64 +1,291 @@
 {
-  "project": "replace-with-project-name",
-  "last_updated": "YYYY-MM-DD",
+  "project": "DARSI Customer Service — RSI A. Yani Surabaya",
+  "last_updated": "2026-06-30",
+  "owner_context": {
+    "Bagus": "Dashboard Admin UI (darsi-admin), Kiosk Node UI (darsi-kiosk), WebView Android",
+    "Irawan": "AI Layer — STT, LLM, TTS, OCR, Face Recognition, Dialog Flow (darsi-ai)",
+    "Yardan": "Backend FastAPI, Database, Integrasi eksternal BPJS/SIM RS/My eRSIy, IoT (darsi-backend)"
+  },
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
     "do_not_skip_verification": true
   },
   "status_legend": {
-    "not_started": "Work has not begun.",
-    "in_progress": "The feature is the current active task.",
-    "blocked": "Work cannot continue until a documented blocker is resolved.",
-    "passing": "Required verification has passed and evidence is recorded."
+    "not_started": "Belum dikerjakan.",
+    "in_progress": "Sedang dikerjakan (hanya satu fitur aktif dalam satu waktu).",
+    "blocked": "Tidak bisa dilanjutkan — blocker terdokumentasi.",
+    "passing": "Verifikasi berhasil dan evidence telah dicatat."
   },
   "features": [
     {
-      "id": "chat-001",
+      "id": "dash-001",
       "priority": 1,
-      "area": "chat",
-      "title": "Create a new conversation",
-      "user_visible_behavior": "A user can click New Chat and see a fresh empty conversation.",
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Setup repo darsi-admin (fondasi)",
+      "user_visible_behavior": "Repo darsi-admin berjalan di localhost. Halaman Login dapat diakses, redirect ke /overview berfungsi, sidebar dengan 6 menu tampil, semua halaman dapat dibuka (boleh skeleton).",
       "status": "not_started",
       "verification": [
-        "Open the app.",
-        "Click New Chat.",
-        "Verify a new conversation appears in the sidebar.",
-        "Verify the main panel shows an empty conversation state."
+        "Jalankan `npm run dev` di darsi-admin.",
+        "Buka http://localhost:3001/login — form login tampil.",
+        "Submit form — redirect ke /overview.",
+        "Klik semua item sidebar — semua halaman dapat dibuka tanpa error 404.",
+        "Tidak ada TypeScript error saat build."
       ],
       "evidence": [],
-      "notes": ""
+      "notes": "Gunakan mock data / MSW agar tidak bergantung pada backend Yardan. Tech: Next.js 14 App Router + Tailwind CSS + TanStack Query + Zustand."
     },
     {
-      "id": "chat-002",
+      "id": "dash-002",
       "priority": 2,
-      "area": "chat",
-      "title": "Send a message in the current conversation",
-      "user_visible_behavior": "A user can submit a message and see it appear in the active thread.",
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Manajemen Node — tabel + real-time status",
+      "user_visible_behavior": "Admin melihat tabel daftar 6 node dengan status online/offline yang update real-time via WebSocket. Kolom: ID, Nama, Lokasi, Status, Avatar, Bahasa, Mode, Aksi.",
       "status": "not_started",
       "verification": [
-        "Open an existing conversation.",
-        "Type a message into the input.",
-        "Submit the message.",
-        "Verify the new message appears in the thread."
+        "Buka halaman /nodes.",
+        "Tabel menampilkan minimal 6 baris node dari mock data.",
+        "Status node (online/offline) tampil sebagai badge berwarna.",
+        "Simulasikan WebSocket event node_status_changed — badge status berubah tanpa reload.",
+        "Toggle aktif/nonaktif per baris berfungsi."
       ],
       "evidence": [],
-      "notes": ""
+      "notes": "Endpoint target: GET /admin/nodes, PATCH /admin/nodes/{id}, WS /ws/node-status. Lihat API contract di Notes/ARCHITECTURE.md."
     },
     {
-      "id": "chat-003",
+      "id": "dash-003",
       "priority": 3,
-      "area": "chat",
-      "title": "Persist the active conversation list",
-      "user_visible_behavior": "A user sees previously created conversations after restarting the app.",
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Modal edit node",
+      "user_visible_behavior": "Admin klik tombol edit pada baris node — modal terbuka dengan form: nama, lokasi, bahasa (dropdown ID/Jawa/Madura), mode (voice-first/touch-first), avatar (dropdown). Submit menyimpan perubahan.",
       "status": "not_started",
       "verification": [
-        "Create two conversations.",
-        "Restart the app.",
-        "Verify both conversations still appear in the sidebar."
+        "Klik tombol edit pada baris NODE-01.",
+        "Modal terbuka dengan data NODE-01 terisi.",
+        "Ubah bahasa ke 'Jawa' dan submit.",
+        "Baris NODE-01 di tabel menampilkan bahasa yang baru.",
+        "Tutup modal dengan tombol cancel — data tidak berubah."
       ],
       "evidence": [],
-      "notes": ""
+      "notes": "Endpoint target: PATCH /admin/nodes/{id}."
+    },
+    {
+      "id": "dash-004",
+      "priority": 4,
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Overview — statistik & alert",
+      "user_visible_behavior": "Admin melihat: kartu total node / online / offline, grafik interaksi 24 jam terakhir, list alert terbaru (node offline, error rate tinggi), quick access 4 menu utama.",
+      "status": "not_started",
+      "verification": [
+        "Buka halaman /overview.",
+        "3 kartu statistik tampil dengan angka dari mock data.",
+        "Grafik interaksi 24 jam tampil (chart library bebas).",
+        "Alert list tampil minimal 2 item.",
+        "Quick access link mengarah ke halaman yang benar."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: GET /admin/overview, WS /ws/node-status."
+    },
+    {
+      "id": "dash-005",
+      "priority": 5,
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Manajemen Avatar — galeri + upload",
+      "user_visible_behavior": "Admin melihat grid thumbnail avatar yang tersedia. Bisa upload avatar baru (nama, peran, file VRM, thumbnail). Bisa assign avatar ke node dari halaman ini.",
+      "status": "not_started",
+      "verification": [
+        "Buka halaman /avatars.",
+        "Grid menampilkan thumbnail avatar dari mock data.",
+        "Klik tombol upload — form muncul dengan field: nama, peran, file VRM, thumbnail.",
+        "Submit form — avatar baru tampil di grid.",
+        "Klik assign avatar ke node — dropdown node tampil dan bisa dipilih."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: GET /admin/avatars, POST /admin/avatars, DELETE /admin/avatars/{id}, PATCH /admin/nodes/{id}/avatar."
+    },
+    {
+      "id": "dash-006",
+      "priority": 6,
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Monitoring & Analytics",
+      "user_visible_behavior": "Admin melihat grafik interaksi per node per hari (dengan filter tanggal + filter node). Kartu metrik: akurasi triage %, error rate STT %, error rate LLM %. Tabel log percakapan dengan pagination.",
+      "status": "not_started",
+      "verification": [
+        "Buka halaman /monitoring.",
+        "Filter tanggal berfungsi — grafik berubah.",
+        "Filter per node berfungsi.",
+        "3 kartu metrik tampil dengan nilai dari mock data.",
+        "Tabel log tampil 10 baris, pagination berfungsi."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: GET /admin/analytics, GET /admin/logs."
+    },
+    {
+      "id": "dash-007",
+      "priority": 7,
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Triage Rules — tabel + form + test",
+      "user_visible_behavior": "Admin melihat tabel triage rules dengan status aktif/nonaktif. Bisa tambah/edit rule (nama, kata kunci gejala, poli tujuan, urgensi). Panel 'Test Rule' untuk simulasi input gejala sebelum diaktifkan.",
+      "status": "not_started",
+      "verification": [
+        "Buka halaman /triage.",
+        "Tabel rules tampil dengan kolom: nama, kata kunci, poli, urgensi, status.",
+        "Klik tambah — form modal terbuka dan bisa diisi.",
+        "Panel Test Rule: input 'perut sakit' — tampil rekomendasi poli.",
+        "Toggle aktif/nonaktif rule berfungsi."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: GET/POST/PATCH /admin/triage-rules, POST /admin/triage-rules/test, GET /admin/triage-rules/{id}/history."
+    },
+    {
+      "id": "dash-008",
+      "priority": 8,
+      "area": "dashboard-admin",
+      "owner": "Bagus",
+      "title": "Halaman Antrian Obat — real-time WebSocket",
+      "user_visible_behavior": "Admin / layar apotek menampilkan antrian obat real-time. Nomor antrian besar, status (menunggu/dipanggil/selesai), jenis obat (racik/non-racik). Update otomatis via WebSocket tanpa reload.",
+      "status": "not_started",
+      "verification": [
+        "Buka halaman /pharmacy.",
+        "Tampilan antrian menampilkan nomor dari mock data dengan font besar.",
+        "Simulasikan WS event queue_called — nomor antrian baru muncul otomatis.",
+        "Riwayat pemanggilan tampil di bawah dengan timestamp.",
+        "Tidak ada flicker / layout shift saat update real-time."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: WS /ws/pharmacy-queue, GET /admin/pharmacy-queue/history."
+    },
+    {
+      "id": "kiosk-001",
+      "priority": 9,
+      "area": "kiosk-ui",
+      "owner": "Bagus",
+      "title": "Setup repo darsi-kiosk + screen idle",
+      "user_visible_behavior": "Repo darsi-kiosk berjalan sebagai static export. Screen idle menampilkan animasi/visual 'Selamat datang, silakan mulai' dengan tombol besar. Build menghasilkan folder out/ yang bisa diload WebView Android.",
+      "status": "not_started",
+      "verification": [
+        "Jalankan `npm run build` — folder out/ terbentuk tanpa error.",
+        "Load out/index.html di browser — screen idle tampil fullscreen.",
+        "Tidak ada request ke server Node.js (semua static).",
+        "Tombol 'Mulai' mengarah ke /session/identify.",
+        "Font size minimum 24pt sesuai aksesibilitas lansia."
+      ],
+      "evidence": [],
+      "notes": "next.config.ts wajib: output: 'export'. Tidak boleh ada Server Actions atau API Routes."
+    },
+    {
+      "id": "kiosk-002",
+      "priority": 10,
+      "area": "kiosk-ui",
+      "owner": "Bagus",
+      "title": "Alur identifikasi pasien (OCR KTP fallback)",
+      "user_visible_behavior": "Layar identifikasi menawarkan 3 opsi: Fingerprint, Scan Wajah, KTP. Alur OCR KTP: kamera aktif, pasien tunjukkan KTP, sistem kirim ke endpoint OCR, NIK/nama tampil untuk konfirmasi.",
+      "status": "not_started",
+      "verification": [
+        "Buka /session/identify — 3 pilihan metode tampil.",
+        "Pilih KTP — kamera aktif via CameraCapture component.",
+        "Mock OCR response mengembalikan data NIK dan nama.",
+        "Halaman konfirmasi tampil: 'Selamat datang, Budi Santoso.'",
+        "Tombol 'Lanjut' membawa ke /session/symptoms."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: POST /ai/ocr/ktp (darsi-ai). Gunakan mock saat darsi-ai belum siap."
+    },
+    {
+      "id": "kiosk-003",
+      "priority": 11,
+      "area": "kiosk-ui",
+      "owner": "Bagus",
+      "title": "Alur input gejala — voice utama + touch fallback",
+      "user_visible_behavior": "Pasien bicara ke mikrofon, teks transkripsi muncul real-time. Jika STT gagal 2x, touchscreen fallback (grid ikon gejala) aktif otomatis. Tombol 'Panggil Petugas' selalu visible.",
+      "status": "not_started",
+      "verification": [
+        "Buka /session/symptoms — mic button tampil menonjol.",
+        "Klik mic — recording aktif, waveform animasi tampil.",
+        "Mock STT mengembalikan teks — tampil di layar untuk konfirmasi.",
+        "Simulasikan 2x gagal STT — grid ikon gejala muncul otomatis.",
+        "Tombol Panggil Petugas selalu terlihat di semua state."
+      ],
+      "evidence": [],
+      "notes": "Endpoint target: POST /ai/stt/transcribe (darsi-ai). useVoice hook menggunakan MediaRecorder API."
+    },
+    {
+      "id": "be-001",
+      "priority": 12,
+      "area": "backend",
+      "owner": "Yardan",
+      "title": "Setup FastAPI + Auth endpoint",
+      "user_visible_behavior": "Server FastAPI berjalan. POST /auth/login menerima username/password dan mengembalikan JWT token. Token divalidasi di endpoint terproteksi.",
+      "status": "not_started",
+      "verification": [
+        "Server FastAPI berjalan di http://localhost:8000.",
+        "POST /auth/login dengan credential valid → response 200 + access_token.",
+        "POST /auth/login dengan credential salah → response 401.",
+        "GET /admin/nodes tanpa token → response 401.",
+        "GET /admin/nodes dengan token valid → response 200."
+      ],
+      "evidence": [],
+      "notes": "Lihat Notes/ARCHITECTURE.md — bagian API Contract Auth dan env variable SECRET_KEY."
+    },
+    {
+      "id": "be-002",
+      "priority": 13,
+      "area": "backend",
+      "owner": "Yardan",
+      "title": "API Node — CRUD + WebSocket node-status",
+      "user_visible_behavior": "GET /admin/nodes mengembalikan daftar node. PATCH /admin/nodes/{id} mengupdate properti. WS /ws/node-status broadcast event node_status_changed ke semua subscriber.",
+      "status": "not_started",
+      "verification": [
+        "GET /admin/nodes → list 6 node dengan schema sesuai ARCHITECTURE.md.",
+        "PATCH /admin/nodes/NODE-01 {is_active: false} → node diupdate.",
+        "Buka 2 koneksi WS /ws/node-status.",
+        "Ubah status node → kedua koneksi menerima event node_status_changed.",
+        "Schema response sesuai API contract di ARCHITECTURE.md."
+      ],
+      "evidence": [],
+      "notes": "Lihat API contract lengkap di Notes/ARCHITECTURE.md bagian Nodes dan WebSocket node-status."
+    },
+    {
+      "id": "ai-001",
+      "priority": 14,
+      "area": "ai-layer",
+      "owner": "Irawan",
+      "title": "STT service — Whisper Large-v3-Turbo",
+      "user_visible_behavior": "POST /transcribe menerima audio base64, mengembalikan teks dalam Bahasa Indonesia. Latensi < 2 detik untuk input suara normal. Akurasi Bahasa Indonesia ≥ 90%.",
+      "status": "not_started",
+      "verification": [
+        "Service berjalan di http://localhost:8001.",
+        "POST /transcribe dengan audio base64 sampel Bahasa Indonesia → teks benar.",
+        "Latensi diukur < 2000ms untuk audio 5 detik.",
+        "Test dengan audio bahasa Jawa — teks dikembalikan (akurasi boleh lebih rendah)."
+      ],
+      "evidence": [],
+      "notes": "Model: Whisper Large-v3-Turbo via faster-whisper. Dev Mac: MLX-Whisper. Lihat Notes/ARCHITECTURE.md bagian darsi-ai/stt."
+    },
+    {
+      "id": "ai-002",
+      "priority": 15,
+      "area": "ai-layer",
+      "owner": "Irawan",
+      "title": "LLM Triage — Ollama + Sahabat-AI 8B",
+      "user_visible_behavior": "Input teks gejala bebas → output rekomendasi poli + confidence score. Akurasi ≥ 85% untuk keluhan umum. Sistem mendeteksi kondisi darurat dan output 'IGD'.",
+      "status": "not_started",
+      "verification": [
+        "Ollama berjalan di localhost:11434 dengan model Sahabat-AI 8B loaded.",
+        "Input 'perut saya sakit dan mual' → output rekomendasi Poli Penyakit Dalam.",
+        "Input 'dada saya sakit tiba-tiba, sesak napas' → output IGD.",
+        "Latensi < 3 detik untuk input normal.",
+        "Triage rules dari database digunakan (bukan hardcoded)."
+      ],
+      "evidence": [],
+      "notes": "Model: Sahabat-AI 8B / Qwen3-8B Q4_K_M GGUF via Ollama. Perlu koordinasi dengan Yardan untuk triage_rule database."
     }
   ]
 }
