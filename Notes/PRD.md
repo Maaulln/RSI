@@ -627,3 +627,5 @@ flowchart TD
 | 7 | STT bahasa Jawa/Madura — model mana yang paling akurat? Perlu eksperimen terpisah sebelum commit ke satu model. | Tim IT | P0 |
 | 8 | Bahasa antarmuka — apakah UI kiosk juga perlu Jawa/Madura atau cukup di level voice? | Pak Amma / pihak RS | P2 |
 | 9 | My eRSIy API — apakah sudah ada dokumentasi dan akses sandbox untuk pengembangan? | Pak Naufal / IT RS | P1 |
+
+Frontend: Next.js 15, React, TypeScript, Tailwind CSS, shadcn/ui. Backend: Hono + VoltAgent. Database: PostgreSQL & LanceDB. AI: Ollama, vLLM, Nemotron 120B, MedGemma dengan RAG dan Tool Calling. Deployment: Docker, Ubuntu Server di Proxmox VE, serta Nginx Proxy Manager.
